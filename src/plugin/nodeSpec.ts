@@ -32,7 +32,6 @@ const getNodeSpecForElement = (
   fieldDescription: FieldDescriptions<string>
 ): NodeSpec => ({
   [elementName]: {
-    defining: true,
     group: groupName,
     content: getDeterministicFieldOrder(
       Object.keys(fieldDescription).map((fieldName) =>
