@@ -9,7 +9,7 @@ import { ElementProvider } from "./ElementProvider";
 
 export const createReactElementSpec = <FDesc extends FieldDescriptions<string>>(
   fieldDescriptions: FDesc,
-  consumer: Consumer<ReactElement, FDesc>,
+  consumer: Consumer<ReactElement | null, FDesc>,
   validate: Validator<FDesc> | undefined = undefined
 ) => {
   const renderer: Renderer<FDesc> = (
@@ -19,7 +19,8 @@ export const createReactElementSpec = <FDesc extends FieldDescriptions<string>>(
     updateState,
     fieldValues,
     commands,
-    subscribe
+    subscribe,
+    sendTelemetryEvent
   ) =>
     render(
       <ElementProvider<FDesc>
@@ -30,6 +31,7 @@ export const createReactElementSpec = <FDesc extends FieldDescriptions<string>>(
         commands={commands}
         consumer={consumer}
         fieldValues={fieldValues}
+        sendTelemetryEvent={sendTelemetryEvent}
       />,
       dom
     );

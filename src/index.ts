@@ -8,14 +8,16 @@ export type {
 export { pullquoteElement } from "./elements/pullquote/PullquoteSpec";
 export { codeElement } from "./elements/code/CodeElementSpec";
 export { createImageElement } from "./elements/image/ImageElement";
-export { createVideoElement } from "./elements/video/VideoSpec";
+export { createStandardElement } from "./elements/standard/StandardSpec";
 export { richlinkElement } from "./elements/rich-link/RichlinkSpec";
 export { createInteractiveElement } from "./elements/interactive/InteractiveSpec";
+export { tableElement } from "./elements/table/TableSpec";
 export {
   transformElementIn,
   transformElementOut,
   undefinedDropdownValue,
 } from "./elements/helpers/transform";
+export { membershipElement } from "./elements/membership/MembershipSpec";
 export { useTyperighterAttr } from "./elements/helpers/typerighter";
 export { fieldGroupName, isProseMirrorElement } from "./plugin/nodeSpec";
 export type { Options } from "./plugin/fieldViews/DropdownFieldView";

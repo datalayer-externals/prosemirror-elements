@@ -12,7 +12,7 @@ export interface CustomFieldDescription<Data = unknown, Props = unknown>
   props: Props;
 }
 
-export const createCustomField = <Data, Props>(
+export const createCustomField = <Data, Props = unknown>(
   defaultValue: Data,
   props: Props,
   validators?: FieldValidator[]
@@ -62,14 +62,6 @@ export class CustomFieldView<Value = unknown> implements FieldView<Value> {
     // The offset of this node relative to its parent FieldView.
     protected offset: number
   ) {}
-
-  public getNodeValue(node: Node): Value {
-    return node.attrs.fields as Value;
-  }
-
-  public getNodeFromValue(fields: Value): Node {
-    return this.node.type.create({ fields });
-  }
 
   /**
    * @returns A function that can be called to update the node fields.

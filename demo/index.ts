@@ -1,4 +1,5 @@
 import { FocusStyleManager } from "@guardian/src-foundations/utils";
+import { UserTelemetryEventSender } from "@guardian/user-telemetry-client";
 import omit from "lodash/omit";
 import type OrderedMap from "orderedmap";
 import { collab } from "prosemirror-collab";
@@ -14,15 +15,17 @@ import {
   createEmbedElement,
   createImageElement,
   createInteractiveElement,
+  membershipElement,
   pullquoteElement,
   richlinkElement,
+  tableElement,
 } from "../src";
 import {
   transformElementOut,
   undefinedDropdownValue,
 } from "../src/elements/helpers/transform";
 import type { MediaPayload } from "../src/elements/image/ImageElement";
-import { createVideoElement } from "../src/elements/video/VideoSpec";
+import { createStandardElement } from "../src/elements/standard/StandardSpec";
 import { buildElementPlugin } from "../src/plugin/element";
 import {
   createParsers,
@@ -38,6 +41,21 @@ import {
   onSelectImage,
   sideEffectPlugin,
 } from "./helpers";
+import {
+  sampleAudio,
+  sampleCallout,
+  sampleCode,
+  sampleDocument,
+  sampleEmbed,
+  sampleImage,
+  sampleInteractive,
+  sampleMap,
+  sampleMembership,
+  samplePullquote,
+  sampleRichLink,
+  sampleTable,
+  sampleVideo,
+} from "./sampleElements";
 import type { WindowType } from "./types";
 
 // Only show focus when the user is keyboard navigating, not when
@@ -50,7 +68,12 @@ const codeElementName = "code";
 const pullquoteElementName = "pullquote";
 const richlinkElementName = "rich-link";
 const videoElementName = "video";
+const mapElementName = "map";
+const audioElementName = "audio";
+const documentElementName = "document";
+const tableElementName = "table";
 const interactiveElementName = "interactive";
+const membershipElementName = "membership";
 
 type Name =
   | typeof embedElementName
@@ -60,7 +83,12 @@ type Name =
   | typeof pullquoteElementName
   | typeof richlinkElementName
   | typeof interactiveElementName
-  | typeof videoElementName;
+  | typeof videoElementName
+  | typeof mapElementName
+  | typeof audioElementName
+  | typeof documentElementName
+  | typeof tableElementName
+  | typeof membershipElementName;
 
 const createCaptionPlugins = (schema: Schema) => exampleSetup({ schema });
 const mockThirdPartyTracking = (html: string) =>
@@ -94,33 +122,60 @@ const {
   additionalRoleOptions,
 });
 
+const standardElement = createStandardElement({
+  createCaptionPlugins,
+  checkThirdPartyTracking: mockThirdPartyTracking,
+});
+
+const telemetryEventService = new UserTelemetryEventSender("example.com");
+
 const {
   plugin: elementPlugin,
   insertElement,
   nodeSpec,
   getElementDataFromNode,
-} = buildElementPlugin({
-  "demo-image-element": createDemoImageElement(onSelectImage, onDemoCropImage),
-  image: imageElement,
-  embed: createEmbedElement({
-    checkThirdPartyTracking: mockThirdPartyTracking,
-    convertTwitter: (src) => console.log(`Add Twitter embed with src: ${src}`),
-    convertYouTube: (src) => console.log(`Add youtube embed with src: ${src}`),
-    createCaptionPlugins,
-    targetingUrl: "https://targeting.code.dev-gutools.co.uk",
-  }),
-  interactive: createInteractiveElement({
-    checkThirdPartyTracking: mockThirdPartyTracking,
-    createCaptionPlugins,
-  }),
-  code: codeElement,
-  pullquote: pullquoteElement,
-  "rich-link": richlinkElement,
-  video: createVideoElement({
-    createCaptionPlugins,
-    checkThirdPartyTracking: mockThirdPartyTracking,
-  }),
-});
+} = buildElementPlugin(
+  {
+    "demo-image-element": createDemoImageElement(
+      onSelectImage,
+      onDemoCropImage
+    ),
+    image: imageElement,
+    embed: createEmbedElement({
+      checkThirdPartyTracking: mockThirdPartyTracking,
+      convertTwitter: (src) =>
+        console.log(`Add Twitter embed with src: ${src}`),
+      convertYouTube: (src) =>
+        console.log(`Add youtube embed with src: ${src}`),
+      createCaptionPlugins,
+      targetingUrl: "https://targeting.code.dev-gutools.co.uk",
+    }),
+    interactive: createInteractiveElement({
+      checkThirdPartyTracking: mockThirdPartyTracking,
+      createCaptionPlugins,
+    }),
+    code: codeElement,
+    pullquote: pullquoteElement,
+    "rich-link": richlinkElement,
+    video: standardElement,
+    audio: standardElement,
+    map: standardElement,
+    table: tableElement,
+    document: standardElement,
+    membership: membershipElement,
+  },
+  {
+    sendTelemetryEvent: (type: string, tags) =>
+      telemetryEventService.addEvent({
+        app: "ProseMirrorElements",
+        stage: "TEST",
+        eventTime: new Date().toISOString(),
+        type,
+        value: true,
+        tags,
+      }),
+  }
+);
 
 const strike: MarkSpec = {
   parseDOM: [{ tag: "s" }, { tag: "del" }, { tag: "strike" }],
@@ -247,7 +302,7 @@ const createEditor = (server: CollabServer) => {
     values: Record<string, unknown>
   ) => {
     const elementButton = document.createElement("button");
-    elementButton.innerHTML = buttonText;
+    elementButton.innerHTML = `Add ${buttonText}`;
     elementButton.id = elementName;
     elementButton.addEventListener("click", () =>
       insertElement({ elementName, values })(view.state, view.dispatch)
@@ -255,66 +310,39 @@ const createEditor = (server: CollabServer) => {
     btnContainer.appendChild(elementButton);
   };
 
-  createElementButton("Add interactive element", interactiveElementName, {
-    iframeUrl:
-      "https://interactive.guim.co.uk/embed/from-tool/looping-video/index.html?poster-image=https%3A%2F%2Fmedia.gutools.co.uk%2Fimages%2F6abeae73a94789a596acb1146d5df554695536ba%3Fcrop%3D60_0_1800_1080&mp4-video=https%3A%2F%2Fuploads.guim.co.uk%2F2022%2F02%2F24%2F220224_Helicopters_3.mp4",
-    scriptName: "iframe-wrapper",
-    source: "Guardian",
-    isMandatory: "false",
-    originalUrl:
-      "https://interactive.guim.co.uk/embed/from-tool/looping-video/index.html?poster-image=https%3A%2F%2Fmedia.gutools.co.uk%2Fimages%2F6abeae73a94789a596acb1146d5df554695536ba%3Fcrop%3D60_0_1800_1080&mp4-video=https%3A%2F%2Fuploads.guim.co.uk%2F2022%2F02%2F24%2F220224_Helicopters_3.mp4",
-    scriptUrl:
-      "https://interactive.guim.co.uk/embed/iframe-wrapper/0.1/boot.js",
-    alt: "Hostomel airbase",
-    html: `<a href="https://interactive.guim.co.uk/embed/from-tool/looping-video/index.html?poster-image=https%3A%2F%2Fmedia.gutools.co.uk%2Fimages%2F6abeae73a94789a596acb1146d5df554695536ba%3Fcrop%3D60_0_1800_1080&mp4-video=https%3A%2F%2Fuploads.guim.co.uk%2F2022%2F02%2F24%2F220224_Helicopters_3.mp4">Hostomel airbase</a>`,
-  });
+  const buttonData = [
+    { label: "Embed", name: embedElementName, values: sampleEmbed },
+    { label: "Callout", name: embedElementName, values: sampleCallout },
+    { label: "Demo image", name: demoImageElementName, values: sampleImage },
+    { label: "Rich-link", name: richlinkElementName, values: sampleRichLink },
+    { label: "Video", name: videoElementName, values: sampleVideo },
+    { label: "Audio", name: audioElementName, values: sampleAudio },
+    { label: "Map", name: mapElementName, values: sampleMap },
+    { label: "Document", name: documentElementName, values: sampleDocument },
+    { label: "Table", name: tableElementName, values: sampleTable },
+    { label: "Audio", name: audioElementName, values: sampleAudio },
+    { label: "Map", name: mapElementName, values: sampleMap },
+    { label: "Document", name: documentElementName, values: sampleDocument },
+    {
+      label: "Membership",
+      name: membershipElementName,
+      values: sampleMembership,
+    },
+    {
+      label: "Interactive",
+      name: interactiveElementName,
+      values: sampleInteractive,
+    },
+    { label: "Pullquote", name: pullquoteElementName, values: samplePullquote },
+    { label: "Code", name: codeElementName, values: sampleCode },
+  ] as const;
 
-  createElementButton("Add embed element", embedElementName, {
-    weighting: "",
-    sourceUrl: "",
-    embedCode: "",
-    caption: "",
-    altText: "",
-    required: false,
-  });
-
-  createElementButton("Add callout element", embedElementName, {
-    altText: "",
-    caption: "",
-    html:
-      '<div data-callout-tagname="test-form-six"><h2>Callout<h2><p>test-form-six</p></div>',
-  });
-
-  createElementButton("Add demo image element", demoImageElementName, {
-    altText: "",
-    caption: "",
-    useSrc: { value: false },
-  });
-
-  createElementButton("Add rich-link element", richlinkElementName, {
-    linkText: "example2",
-    url: "https://example.com",
-    weighting: "",
-    draftReference: "",
-  });
-
-  createElementButton("Add video element", videoElementName, {
-    source: "YouTube",
-    isMandatory: "false",
-    role: "showcase",
-    url: "https://www.youtube.com/watch?v=BggrpKfqh1c",
-    description: "This ain't real Latin",
-    originalUrl: "https://www.youtube.com/watch?v=BggrpKfqh1c",
-    height: "259",
-    title: "Lorem Ipsum",
-    html:
-      '\n            <iframe\n                height="259"\n                width="460"\n                src="https://www.youtube.com/embed/jUghnM2qy9M?wmode=opaque&feature=oembed"\n                frameborder="0"\n                allowfullscreen\n            ></iframe>\n        ',
-    width: "460",
-    authorName: "Lorem Ipsum",
-  });
+  buttonData.map(({ label, name, values }) =>
+    createElementButton(label, name, values)
+  );
 
   const imageElementButton = document.createElement("button");
-  imageElementButton.innerHTML = "Add image element";
+  imageElementButton.innerHTML = "Image element";
   imageElementButton.id = imageElementName;
   imageElementButton.addEventListener("click", () => {
     const setMedia = (mediaPayload: MediaPayload) => {
@@ -351,17 +379,6 @@ const createEditor = (server: CollabServer) => {
     );
   });
   btnContainer.appendChild(toggleImageFields);
-
-  createElementButton("Add pullquote element", pullquoteElementName, {
-    pullquote: "",
-    attribution: "",
-    weighting: "supporting",
-  });
-
-  createElementButton("Add code element", codeElementName, {
-    codeText: "",
-    language: "Plain text",
-  });
 
   new EditorConnection(view, server, clientID, `User ${clientID}`, (state) => {
     if (isFirstEditor) {

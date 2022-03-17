@@ -1,7 +1,9 @@
+import { DOMSerializer } from "prosemirror-model";
 import type { Node, Schema } from "prosemirror-model";
 import type { EditorState } from "prosemirror-state";
 import { NodeSelection, Plugin, PluginKey } from "prosemirror-state";
 import type { EditorProps } from "prosemirror-view";
+import type { SendTelemetryEvent } from "../elements/helpers/types/TelemetryEvents";
 import type {
   ElementSpec,
   ElementSpecMap,
@@ -38,7 +40,8 @@ export const createPlugin = <
   elementsSpec: {
     [elementName in ElementNames]: ElementSpec<FDesc>;
   },
-  commands: Commands
+  commands: Commands,
+  sendTelemetryEvent: SendTelemetryEvent
 ): Plugin<PluginState, Schema> => {
   return new Plugin<PluginState, Schema>({
     key: pluginKey,
@@ -105,7 +108,8 @@ export const createPlugin = <
       decorations,
       nodeViews: createNodeViews(
         elementsSpec as ElementSpecMap<FDesc, ElementNames>,
-        commands
+        commands,
+        sendTelemetryEvent
       ),
     },
   });
@@ -118,7 +122,8 @@ const createNodeViews = <
   FDesc extends FieldDescriptions<string>
 >(
   elementsSpec: ElementSpecMap<FDesc, ElementNames>,
-  commands: Commands
+  commands: Commands,
+  sendTelemetryEvent: SendTelemetryEvent
 ): NodeViewSpec => {
   const nodeViews = {} as NodeViewSpec;
   for (const elementName in elementsSpec) {
@@ -126,7 +131,8 @@ const createNodeViews = <
     nodeViews[nodeName] = createNodeView(
       nodeName,
       elementsSpec[elementName],
-      commands
+      commands,
+      sendTelemetryEvent
     );
   }
 
@@ -141,7 +147,8 @@ const createNodeView = <
 >(
   nodeName: NodeName,
   element: ElementSpec<FDesc>,
-  commands: Commands
+  commands: Commands,
+  sendTelemetryEvent: SendTelemetryEvent
 ): NodeViewCreator => (initNode, view, _getPos, _, innerDecos) => {
   const dom = document.createElement("div");
   dom.contentEditable = "false";
@@ -188,7 +195,8 @@ const createNodeView = <
     } as unknown) as FieldNameToField<FDesc>[typeof fieldName];
   });
 
-  const initValues = getFieldValuesFromNode(fields, initNode);
+  const serializer = DOMSerializer.fromSchema(initNode.type.schema);
+  const initValues = getFieldValuesFromNode(fields, initNode, serializer);
   const initCommands = commands(getPos, view);
 
   // Because nodes and decorations are immutable in ProseMirror, we can compare
@@ -222,7 +230,8 @@ const createNodeView = <
       );
     },
     initValues,
-    initCommands
+    initCommands,
+    sendTelemetryEvent
   );
 
   return {
@@ -246,7 +255,7 @@ const createNodeView = <
 
         // Only recalculate our field values if our node content has changed.
         const newFieldValues = fieldValuesChanged
-          ? getFieldValuesFromNode(fields, newNode)
+          ? getFieldValuesFromNode(fields, newNode, serializer)
           : currentValues;
 
         // Only update our FieldViews if their content or decorations have changed.

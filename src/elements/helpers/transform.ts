@@ -2,9 +2,11 @@ import type { codeFields } from "../code/CodeElementSpec";
 import { transformElement as embedElementTransform } from "../embed/embedDataTransformer";
 import { transformElement as imageElementTransform } from "../image/imageElementDataTransformer";
 import { transformElement as interactiveElementTransform } from "../interactive/interactiveDataTransformer";
+import { transformElement as membershipElementTransform } from "../membership/membershipDataTransformer";
 import type { pullquoteFields } from "../pullquote/PullquoteSpec";
 import type { richlinkFields } from "../rich-link/RichlinkSpec";
-import { transformElement as videoElementTransform } from "../video/videoDataTransformer";
+import { transformElement as standardElementTransform } from "../standard/standardDataTransformer";
+import type { tableFields } from "../table/TableSpec";
 import { transformElement as defaultElementTransform } from "./defaultTransform";
 
 // A placeholder value for a dropdown option that represents no selection.
@@ -16,8 +18,18 @@ const transformMap = {
   image: imageElementTransform,
   interactive: interactiveElementTransform,
   pullquote: defaultElementTransform<typeof pullquoteFields>(),
-  "rich-link": defaultElementTransform<typeof richlinkFields>(true),
-  video: videoElementTransform,
+  "rich-link": defaultElementTransform<typeof richlinkFields>({
+    isMandatory: true,
+  }),
+  video: standardElementTransform,
+  audio: standardElementTransform,
+  document: standardElementTransform,
+  map: standardElementTransform,
+  membership: membershipElementTransform,
+  table: defaultElementTransform<typeof tableFields>({
+    isMandatory: true,
+    transformRole: true,
+  }),
 } as const;
 
 type TransformMap = typeof transformMap;
