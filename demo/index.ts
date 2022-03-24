@@ -20,6 +20,7 @@ import {
   richlinkElement,
   tableElement,
 } from "../src";
+import { deprecatedElement } from "../src/elements/deprecated/DeprecatedSpec";
 import {
   transformElementOut,
   undefinedDropdownValue,
@@ -55,6 +56,7 @@ import {
   sampleRichLink,
   sampleTable,
   sampleVideo,
+  sampleVine,
 } from "./sampleElements";
 import type { WindowType } from "./types";
 
@@ -74,6 +76,9 @@ const documentElementName = "document";
 const tableElementName = "table";
 const interactiveElementName = "interactive";
 const membershipElementName = "membership";
+const witnessElementName = "witness";
+const instagramElementName = "instagram";
+const vineElementName = "vine";
 
 type Name =
   | typeof embedElementName
@@ -88,7 +93,10 @@ type Name =
   | typeof audioElementName
   | typeof documentElementName
   | typeof tableElementName
-  | typeof membershipElementName;
+  | typeof membershipElementName
+  | typeof witnessElementName
+  | typeof instagramElementName
+  | typeof vineElementName;
 
 const createCaptionPlugins = (schema: Schema) => exampleSetup({ schema });
 const mockThirdPartyTracking = (html: string) =>
@@ -125,6 +133,7 @@ const {
 const standardElement = createStandardElement({
   createCaptionPlugins,
   checkThirdPartyTracking: mockThirdPartyTracking,
+  useLargePreview: false,
 });
 
 const telemetryEventService = new UserTelemetryEventSender("example.com");
@@ -161,8 +170,15 @@ const {
     audio: standardElement,
     map: standardElement,
     table: tableElement,
-    document: standardElement,
+    document: createStandardElement({
+      createCaptionPlugins,
+      checkThirdPartyTracking: mockThirdPartyTracking,
+      useLargePreview: true,
+    }),
     membership: membershipElement,
+    witness: deprecatedElement,
+    vine: deprecatedElement,
+    instagram: deprecatedElement,
   },
   {
     sendTelemetryEvent: (type: string, tags) =>
@@ -320,9 +336,6 @@ const createEditor = (server: CollabServer) => {
     { label: "Map", name: mapElementName, values: sampleMap },
     { label: "Document", name: documentElementName, values: sampleDocument },
     { label: "Table", name: tableElementName, values: sampleTable },
-    { label: "Audio", name: audioElementName, values: sampleAudio },
-    { label: "Map", name: mapElementName, values: sampleMap },
-    { label: "Document", name: documentElementName, values: sampleDocument },
     {
       label: "Membership",
       name: membershipElementName,
@@ -335,6 +348,7 @@ const createEditor = (server: CollabServer) => {
     },
     { label: "Pullquote", name: pullquoteElementName, values: samplePullquote },
     { label: "Code", name: codeElementName, values: sampleCode },
+    { label: "Vine", name: vineElementName, values: sampleVine },
   ] as const;
 
   buttonData.map(({ label, name, values }) =>
